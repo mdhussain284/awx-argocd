@@ -1,6 +1,6 @@
 ---
 - name: Installing argo-cd on AWX
-  hosts: 192.168.100.150
+  hosts: eoc-controller
   become: yes
   tasks:
     - name: Creating a namespace
@@ -9,36 +9,33 @@
         api_version: v1
         kind: Namespace
         state: present
-  
+
     - name: Download the argo-cd manifest
       ansible.builtin.get_url:
         url: https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
         dest: ~/install.yml
         mode: '0664'
-  
+
     - name: Applying the manifest to the cluster
       kubernetes.core.k8s:
         namespace: argocd
         state: present
         src: ~/install.yml
-  
+
     - name: Download argocd-linux-amd64 binary
       ansible.builtin.get_url:
         url: "https://github.com/argoproj/argo-cd/releases/latest/download/argocd-linux-amd64"
-        dest: "argocd-linux-amd64"
-        mode: "0755" 
-  
+        dest: "~/argocd-linux-amd64"
+        mode: "0755"
+
     - name: Install argocd-linux-amd64 binary
-      ansible.builtin.copy:
-        src: "argocd-linux-amd64"
-        dest: "/usr/local/bin/argocd"
-        mode: "0555"
-  
+      shell: install -m 555 ~/argocd-linux-amd64 /usr/local/bin/argocd
+
     - name: Remove argocd-linux-amd64 binary
       ansible.builtin.file:
-        path: "argocd-linux-amd64"
+        path: "~/argocd-linux-amd64"
         state: absent
-    
+
     - name: Creating a service
       kubernetes.core.k8s:
         state: present
@@ -55,18 +52,19 @@
               - protocol: TCP
                 port: 80
                 targetPort: 8080
-                nodePort: 32000 
+                nodePort: 32000
             type: LoadBalancer
-            
-    - name: Get the initial password of the argocd 
-      ansible.builtin.command:
-        cmd: argocd admin initial-password -n argocd
-        register: argo_passwd_output
-  
+
+    - name: Get the initial password of the argocd
+      shell: sudo /usr/local/bin/argocd admin initial-password -n argocd
+      register: argo_passwd_output
+
+    - name: Store the password in a variable
+      set_fact:
+        argo_password: "{{ argo_passwd_output.stdout_lines[0] }}"
+
     - name: Login into argo-cd
-      shell: argocd login localhost:32000 --username admin --password {{ argo_passwd_output.stdout }} --insecure
-      run_once: yes
-  
-    - name: update the password
-      shell: argocd account update-password --current-password {{ argo_passwd_output.stdout }} --new-password linux --insecure
-      run_once: yes
+      shell: sudo /usr/local/bin/argocd login 192.168.100.150:32000 --username admin --password "{{ argo_password }}" --insecure
+
+    - name: Update the password
+      shell: sudo /usr/local/bin/argocd account update-password --current-password "{{ argo_password }}" --new-password Welcome@123 --insecure
