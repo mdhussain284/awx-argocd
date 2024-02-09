@@ -1,0 +1,71 @@
+---
+- name: Installing argo-cd on AWX
+  hosts: 192.168.100.150
+  become: yes
+  tasks:
+    - name: Creating a namespace
+      kubernetes.core.k8s:
+        name: argocd
+        api_version: v1
+        kind: Namespace
+        state: present
+  
+    - name: Download the argo-cd manifest
+      ansible.builtin.get_url:
+        url: https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+        dest: ~/install.yml
+        mode: '0664'
+  
+    - name: Applying the manifest to the cluster
+      kubernetes.core.k8s:
+        state: present
+        src: ~/install.yml
+  
+   - name: Download argocd-linux-amd64 binary
+    ansible.builtin.get_url:
+      url: "https://github.com/argoproj/argo-cd/releases/latest/download/argocd-linux-amd64"
+      dest: "argocd-linux-amd64"
+      mode: "0755" 
+  
+  - name: Install argocd-linux-amd64 binary
+    ansible.builtin.copy:
+      src: "argocd-linux-amd64"
+      dest: "/usr/local/bin/argocd"
+      mode: "0555"
+  
+  - name: Remove argocd-linux-amd64 binary
+    ansible.builtin.file:
+      path: "argocd-linux-amd64"
+      state: absent
+  
+  - name: Creating a service
+    kubernetes.core.k8s:
+      state: present
+      definition:
+        apiVersion: v1
+        kind: Service
+        metadata:
+          name: argocd-server
+          namespace: argocd
+        spec:
+          selector:
+            app.kubernetes.io/name: argocd-server
+          ports:
+            - protocol: TCP
+              port: 80
+              targetPort: 8080
+              nodePort: 32000 
+          type: LoadBalancer
+          
+  - name: Get the initial password of the argocd 
+    ansible.builtin.command:
+      cmd: argocd admin initial-password -n argocd
+      register: argo_passwd_output
+
+  - name: Login into argo-cd
+    shell: argocd login localhost:32000 --username admin --password {{ argo_passwd_output.stdout }} --insecure
+    run_once: yes
+
+  - name: update the password
+    shell: argocd account update-password --current-password {{ argo_passwd_output.stdout }} --new-password linux --insecure
+    run_once: yes
