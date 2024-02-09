@@ -1,4 +1,4 @@
 # awx-argocd
-'''pip install kubernetes
+pip install kubernetes
 ansible-galaxy collection install kubernetes.core
-ansible-galaxy collection list'''
+ansible-galaxy collection list
