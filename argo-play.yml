@@ -56,7 +56,7 @@
             type: LoadBalancer
 
     - name: Get the initial password of the argocd
-      shell: sudo /usr/local/bin/argocd admin initial-password -n argocd
+      shell: /usr/local/bin/argocd admin initial-password -n argocd
       register: argo_passwd_output
 
     - name: Store the password in a variable
@@ -64,7 +64,18 @@
         argo_password: "{{ argo_passwd_output.stdout_lines[0] }}"
 
     - name: Login into argo-cd
-      shell: sudo /usr/local/bin/argocd login 192.168.100.150:32000 --username admin --password "{{ argo_password }}" --insecure
+      shell: /usr/local/bin/argocd login 192.168.100.150:32000 --username admin --password "{{ argo_password }}" --insecure
 
     - name: Update the password
-      shell: sudo /usr/local/bin/argocd account update-password --current-password "{{ argo_password }}" --new-password Welcome@123 --insecure
+      shell: /usr/local/bin/argocd account update-password --current-password "{{ argo_password }}" --new-password Welcome@123 --insecure
+      
+    - name: Get Kubernetes contexts
+      shell: kubectl config get-contexts -o name
+      register: kubectl_contexts_output
+
+     - name: Store the context name in a variable
+      set_fact:
+        context_name: "{{ kubectl_contexts_output.stdout }}"
+
+     - name: Add the context to the argocd cluster
+       shell: /usr/local/bin/argocd cluster add "{{ context_name }}"
