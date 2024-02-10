@@ -1,0 +1,3 @@
+- name: Store the password in a variable
+  set_fact:
+    argo_password: "{{ argo_passwd_output.stdout_lines[0] }}"
