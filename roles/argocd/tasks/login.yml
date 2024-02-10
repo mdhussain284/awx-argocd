@@ -1,0 +1,2 @@
+- name: Login into argo-cd
+  shell: /usr/local/bin/argocd login 192.168.100.150:32000 --username admin --password {{ argo_password }} --insecure
