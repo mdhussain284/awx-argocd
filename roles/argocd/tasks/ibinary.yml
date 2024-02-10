@@ -1,2 +1,2 @@
 - name: Install argocd-linux-amd64 binary
-    shell: install -m 555 ~/argocd-linux-amd64 /usr/local/bin/argocd
+  shell: install -m 555 ~/argocd-linux-amd64 /usr/local/bin/argocd
