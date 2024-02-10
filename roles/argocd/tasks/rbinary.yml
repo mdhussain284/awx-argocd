@@ -1,4 +1,4 @@
 - name: Remove argocd-linux-amd64 binary
-    ansible.builtin.file:
-      path: "~/argocd-linux-amd64"
-      state: absent
+  ansible.builtin.file:
+    path: "~/argocd-linux-amd64"
+    state: absent
