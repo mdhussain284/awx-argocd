@@ -1,0 +1,2 @@
+- name: Update the password
+  shell: /usr/local/bin/argocd account update-password --current-password {{ argo_password }} --new-password Welcome@123 --insecure
