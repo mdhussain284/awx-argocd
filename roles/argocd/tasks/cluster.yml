@@ -1,0 +1,2 @@
+- name: Add the context to the argocd cluster
+  shell: /usr/local/bin/argocd cluster add "{{ context_name }}" -y
